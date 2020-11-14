@@ -47,6 +47,7 @@ class Cloudflare:
         
     def setup(self):
         self._webdriver.get(self.url)
+        print(self._webdriver.page_source)
 
         self.type = self._captcha_type()
         if self.type == CaptchaType.hCaptcha:
