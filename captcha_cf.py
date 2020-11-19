@@ -6,6 +6,14 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 import enum
 
+def create_profile(user_agent=None):
+    profile = webdriver.FirefoxProfile()
+    if user_agent:
+        profile.set_preference("general.useragent.override", user_agent)
+    profile.set_preference("permissions.default.stylesheet", 2)
+    profile.set_preference("permissions.default.image", 2)
+    return user_agent
+
 class CaptchaType(enum.Enum):
     ReCaptchaV2 = enum.auto()
     hCaptcha = enum.auto()
@@ -18,34 +26,38 @@ class Cloudflare:
     def __init__(self, url, proxy=None, timeout=10, user_agent=None):
         self.url = url.rstrip("/") + "/robots.txt" # prob the lightest page to load
         self.timeout = timeout # used for page, element and redirect timeouts
+        self.user_agent = user_agent
+        self.proxy = proxy
+        self._url = url
         self.active = True
+        self._webdriver = None
 
+        try:
+            self._setup()
+            self._load_page()
+        except Exception as exc:
+            self.__exit__(exc, 0, 0)
+
+    def _setup(self):
         dc = webdriver.DesiredCapabilities.FIREFOX.copy()
-        if proxy:
+        if self.proxy:
             dc["proxy"] = {
                 "proxyType": "manual",
-                "httpProxy": proxy,
-                "sslProxy": proxy,
+                "httpProxy": self.proxy,
+                "sslProxy": self.proxy,
             }
         
         options = webdriver.FirefoxOptions()
         options.add_argument("-headless")
 
-        profile = webdriver.FirefoxProfile()
-        if user_agent:
-            profile.set_preference("general.useragent.override", user_agent)
-        # saves some time by not loading images and such
-        profile.set_preference("permissions.default.stylesheet", 2)
-        profile.set_preference("permissions.default.image", 2)
-
         self._webdriver = webdriver.Firefox(
-            firefox_profile=profile,
+            firefox_profile=create_profile(self.user_agent),
             options=options,
             desired_capabilities=dc
         )
         self._webdriver.set_page_load_timeout(self.timeout)
-        
-    def setup(self):
+
+    def _load_page(self):
         self._webdriver.get(self.url)
 
         self.type = self._captcha_type()
@@ -61,7 +73,7 @@ class Cloudflare:
         self.close()
             
     def close(self):
-        if self.active:
+        if self._webdriver and self.active:
             self.active = False
             self._webdriver.quit()
     
