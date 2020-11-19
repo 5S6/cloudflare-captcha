@@ -37,6 +37,7 @@ class Cloudflare:
             self._load_page()
         except Exception as exc:
             self.__exit__(exc, 0, 0)
+            raise
 
     def _setup(self):
         dc = webdriver.DesiredCapabilities.FIREFOX.copy()
