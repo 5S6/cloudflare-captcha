@@ -12,7 +12,7 @@ def create_profile(user_agent=None):
         profile.set_preference("general.useragent.override", user_agent)
     profile.set_preference("permissions.default.stylesheet", 2)
     profile.set_preference("permissions.default.image", 2)
-    return user_agent
+    return profile
 
 class CaptchaType(enum.Enum):
     ReCaptchaV2 = enum.auto()
